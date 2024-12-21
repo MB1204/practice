@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question and Answer Box</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            width: 300px;
+        }
+        #answerBox {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="box">
+            <label for="questionInput">Enter your question:</label>
+            <form hx-post="/submit-question" hx-target="#answerOutput" hx-swap="innerHTML">
+                <input type="text" id="questionInput" name="question" placeholder="Type your question here" required>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+        
+        <div class="box" id="answerBox">
+            <strong>Answer:</strong>
+            <p id="answerOutput">Your answer will appear here.</p>
+        </div>
+    </div>
+
+    <!-- Simulated server response -->
+    <script>
+        // This is just a placeholder for demonstration purposes.
+        // In a real application, you would set up a server to handle the request.
+        document.addEventListener('htmx:configRequest', (event) => {
+            const question = event.detail.parameters.question;
+            if (question) {
+                event.detail.headers['X-HTMX-Response'] = "You asked: " + question + ". This is a simulated answer.";
+            }
+        });
+    </script>
+
+</body>
+</html>
