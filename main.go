@@ -48,8 +48,8 @@ func main() {
 }
 
 func getAnswerFromAPI(question string) (string, error) {
-    apiURL := "https://api.replicate.com/v1/predictions"
-    apiKey := os.Getenv("REPLICATE_API_TOKEN") // Load API key from environment variable
+    apiURL := "https://api.openai.com/v1/chat/completions"
+    apiKey := os.Getenv("Axiom") // Load API key from environment variable
 
     if apiKey == "" {
         return "", fmt.Errorf("API key is not set")
