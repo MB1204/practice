@@ -4,40 +4,58 @@ import (
     "bytes"
     "encoding/json"
     "fmt"
-    // "github.com/replicate/replicate-go" // Removed as it is not used
-    "io/ioutil"
+    "log"
     "net/http"
+    "os"
 )
 
 func serveHTML(w http.ResponseWriter, r *http.Request) {
-    http.ServeFile(w, r, "practice.html")
+    http.ServeFile(w, r, "practice.html") // Ensure practice.html exists in the same directory
 }
 
 func submitQuestionHandler(w http.ResponseWriter, r *http.Request) {
-    r.ParseForm()
+    if err := r.ParseForm(); err != nil {
+        log.Println("Error parsing form:", err)
+        http.Error(w, "Invalid form data", http.StatusBadRequest)
+        return
+    }
+
     question := r.FormValue("question")
+    if question == "" {
+        http.Error(w, "Question cannot be empty", http.StatusBadRequest)
+        return
+    }
+
+    fmt.Println("Received question:", question)
 
     answer, err := getAnswerFromAPI(question)
     if err != nil {
+        log.Println("Error retrieving answer from API:", err)
         http.Error(w, "Error retrieving answer", http.StatusInternalServerError)
         return
     }
 
-    // Respond with the answer
-    fmt.Fprintf(w, answer)
+    fmt.Fprint(w, answer)
 }
 
 func main() {
     http.HandleFunc("/", serveHTML)
     http.HandleFunc("/submit-question", submitQuestionHandler)
-    http.ListenAndServe(":8080", nil) // Start the server on port 8080
+
+    port := "8080"
+    fmt.Println("Server starting on port", port)
+    log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
 func getAnswerFromAPI(question string) (string, error) {
-    apiURL := "https://api.replicate.com/v1/predictions" // Replicate API endpoint
-    apiKey := "your_api_key" // Replace with your actual API key
+    apiURL := "https://api.replicate.com/v1/predictions"
+    apiKey := os.Getenv("REPLICATE_API_TOKEN") // Load API key from environment variable
+
+    if apiKey == "" {
+        return "", fmt.Errorf("API key is not set")
+    }
+
     requestBody, err := json.Marshal(map[string]interface{}{
-        "version": "your_model_version", // Replace with the specific model version
         "input": map[string]string{
             "question": question,
         },
@@ -50,7 +68,7 @@ func getAnswerFromAPI(question string) (string, error) {
     if err != nil {
         return "", err
     }
-    req.Header.Set("Authorization", "Token " + apiKey) // Set the API key in the header
+    req.Header.Set("Authorization", "Token "+apiKey)
     req.Header.Set("Content-Type", "application/json")
 
     client := &http.Client{}
@@ -65,13 +83,20 @@ func getAnswerFromAPI(question string) (string, error) {
     }
 
     var result map[string]interface{}
-    body, _ := ioutil.ReadAll(resp.Body)
-    json.Unmarshal(body, &result)
-
-    answer, ok := result["answer"].(string)
-    if !ok {
-        return "", fmt.Errorf("unexpected response format")
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+        return "", fmt.Errorf("error decoding API response: %v", err)
     }
+
+    prediction, ok := result["prediction"].(map[string]interface{})
+    if !ok {
+        return "", fmt.Errorf("unexpected API response structure")
+    }
+
+    answer, ok := prediction["answer"].(string)
+    if !ok {
+        return "", fmt.Errorf("answer not found in API response")
+    }
+
     return answer, nil
 }
- 
+

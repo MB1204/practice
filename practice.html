@@ -44,17 +44,7 @@
         </div>
     </div>
 
-    <!-- Simulated server response -->
-    <script>
-        // This is just a placeholder for demonstration purposes.
-        // In a real application, you would set up a server to handle the request.
-        document.addEventListener('htmx:configRequest', (event) => {
-            const question = event.detail.parameters.question;
-            if (question) {
-                event.detail.headers['X-HTMX-Response'] = "You asked: " + question + ". This is a simulated answer.";
-            }
-        });
-    </script>
+    <!-- Simulated server response removed for testing -->
 
 </body>
 </html>
