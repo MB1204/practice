@@ -4,6 +4,7 @@ import (
     "bytes"
     "encoding/json"
     "fmt"
+    // "github.com/replicate/replicate-go" // Removed as it is not used
     "io/ioutil"
     "net/http"
 )
@@ -34,6 +35,7 @@ func main() {
 
 func getAnswerFromAPI(question string) (string, error) {
     apiURL := "https://api.replicate.com/v1/predictions" // Replicate API endpoint
+    apiKey := "your_api_key" // Replace with your actual API key
     requestBody, err := json.Marshal(map[string]interface{}{
         "version": "your_model_version", // Replace with the specific model version
         "input": map[string]string{
@@ -44,7 +46,15 @@ func getAnswerFromAPI(question string) (string, error) {
         return "", err
     }
 
-    resp, err := http.Post(apiURL, "application/json", bytes.NewBuffer(requestBody))
+    req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(requestBody))
+    if err != nil {
+        return "", err
+    }
+    req.Header.Set("Authorization", "Token " + apiKey) // Set the API key in the header
+    req.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
     if err != nil {
         return "", err
     }
@@ -54,10 +64,14 @@ func getAnswerFromAPI(question string) (string, error) {
         return "", fmt.Errorf("API request failed with status: %s", resp.Status)
     }
 
-    var result map[string]string
+    var result map[string]interface{}
     body, _ := ioutil.ReadAll(resp.Body)
     json.Unmarshal(body, &result)
 
-    return result["answer"], nil
+    answer, ok := result["answer"].(string)
+    if !ok {
+        return "", fmt.Errorf("unexpected response format")
+    }
+    return answer, nil
 }
-
+ 
